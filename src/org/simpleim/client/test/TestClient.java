@@ -38,7 +38,7 @@ public class TestClient {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		// Print usage if no argument is specified.
 		if (args.length != 2) {
 			System.err.println(
@@ -51,6 +51,17 @@ public class TestClient {
 		final String host = args[0];
 		final int port = Integer.parseInt(args[1]);
 
-		new TestClient(host, port).run();
+		for(int i = 0 ; i <= 800 ; i++) {
+			new Thread(){
+				@Override
+				public void run() {
+					try {
+						new TestClient(host, port).run();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}.start();
+		}
 	}
 }
