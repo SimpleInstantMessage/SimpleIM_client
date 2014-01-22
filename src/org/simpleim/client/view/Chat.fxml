@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.HBox?>
+
+<HBox xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2">
+  <children>
+    <SplitPane dividerPositions="0.75" focusTraversable="true" orientation="VERTICAL" prefHeight="400.0" prefWidth="400.0" HBox.hgrow="ALWAYS">
+      <items>
+        <TextArea wrapText="true" />
+        <AnchorPane>
+          <children>
+            <TextArea wrapText="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+            <Button mnemonicParsing="false" text="Button" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" />
+          </children>
+        </AnchorPane>
+      </items>
+    </SplitPane>
+    <VBox prefHeight="400.0" prefWidth="150.0" HBox.hgrow="NEVER" />
+  </children>
+</HBox>
