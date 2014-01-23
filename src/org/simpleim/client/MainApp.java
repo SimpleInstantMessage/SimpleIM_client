@@ -4,14 +4,13 @@ import java.io.IOException;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 public class MainApp extends Application {
 	private Stage mPrimaryStage;
-	private BorderPane mRootLayout;
+	private Parent mRootLayout;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -21,23 +20,25 @@ public class MainApp extends Application {
 	public void start(Stage primaryStage) {
 		mPrimaryStage = primaryStage;
 		mPrimaryStage.setTitle("SimpleIM");
-		try {
-			FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("view/RootLayout.fxml"));
-			mRootLayout = (BorderPane) loader.load();
-			Scene scene = new Scene(mRootLayout);
-			mPrimaryStage.setScene(scene);
-			mPrimaryStage.show();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 
-		showChatView();
+		showLoginView();
+	}
+
+	private void showLoginView() {
+		showScene("view/Login.fxml");
 	}
 
 	private void showChatView() {
+		showScene("view/Chat.fxml");
+	}
+
+	private void showScene(String rootNotePath) {
 		try {
-			FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("view/Chat.fxml"));
-			mRootLayout.setCenter((Node) loader.load());
+			FXMLLoader loader = new FXMLLoader(MainApp.class.getResource(rootNotePath));
+			mRootLayout = (Parent) loader.load();
+			Scene scene = new Scene(mRootLayout);
+			mPrimaryStage.setScene(scene);
+			mPrimaryStage.show();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
