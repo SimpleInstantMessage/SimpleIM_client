@@ -24,21 +24,24 @@ public class MainApp extends Application {
 		showLoginView();
 	}
 
-	private void showLoginView() {
-		showScene("view/Login.fxml");
+	/*package*/ void showLoginView() {
+		LoginController controller = showScene("view/Login.fxml");
+		controller.setMainApp(this);
 	}
 
-	private void showChatView() {
+	/*package*/ void showChatView() {
 		showScene("view/Chat.fxml");
 	}
 
-	private void showScene(String rootNotePath) {
+	private <T> T showScene(String rootNotePath) {
 		try {
 			FXMLLoader loader = new FXMLLoader(MainApp.class.getResource(rootNotePath));
 			mRootLayout = (Parent) loader.load();
 			Scene scene = new Scene(mRootLayout);
 			mPrimaryStage.setScene(scene);
+			mPrimaryStage.sizeToScene();
 			mPrimaryStage.show();
+			return loader.getController();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

@@ -5,16 +5,16 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane id="AnchorPane" minHeight="180.0" minWidth="320.0" prefHeight="360.0" prefWidth="640.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2">
+<AnchorPane id="AnchorPane" minHeight="180.0" minWidth="320.0" prefHeight="360.0" prefWidth="640.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2" fx:controller="org.simpleim.client.LoginController">
   <children>
     <VBox id="VBox" alignment="CENTER" spacing="5.0" AnchorPane.bottomAnchor="100.0" AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="50.0" AnchorPane.topAnchor="0.0">
       <children>
         <GridPane gridLinesVisible="false">
           <children>
             <Label text="Server" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-            <TextField prefWidth="200.0" text="localhost" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+            <TextField fx:id="server" prefWidth="200.0" text="localhost" GridPane.columnIndex="1" GridPane.rowIndex="0" />
             <Label text="Port" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-            <TextField prefWidth="200.0" text="10000" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <TextField fx:id="port" prefWidth="200.0" text="10000" GridPane.columnIndex="1" GridPane.rowIndex="1" />
           </children>
           <columnConstraints>
             <ColumnConstraints hgrow="NEVER" maxWidth="270.0" minWidth="50.0" prefWidth="74.0" />
@@ -27,6 +27,6 @@
         </GridPane>
       </children>
     </VBox>
-    <Button defaultButton="true" mnemonicParsing="false" text="Login" AnchorPane.bottomAnchor="40.0" AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="50.0" />
+    <Button defaultButton="true" mnemonicParsing="false" onAction="#handleLogin" text="Login" AnchorPane.bottomAnchor="40.0" AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="50.0" />
   </children>
 </AnchorPane>
