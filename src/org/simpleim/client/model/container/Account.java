@@ -1,6 +1,6 @@
 package org.simpleim.client.model.container;
 
-public class Account {
+public class Account implements Cloneable {
 	private String id;
 	private String password;
 	private String nickname;
@@ -47,5 +47,14 @@ public class Account {
 
 	public boolean isValid() {
 		return id != null && !id.isEmpty() && password != null;
+	}
+
+	@Override
+	public Account clone() {
+		try {
+			return (Account) super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

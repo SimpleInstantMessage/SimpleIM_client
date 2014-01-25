@@ -1,7 +1,6 @@
 package org.simpleim.client;
 
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -18,7 +17,7 @@ import java.io.Writer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 
@@ -53,39 +52,29 @@ public class LoginController {
 	@FXML
 	private void handleLogin() {
 		String server = this.server.getText();
-		int port = Integer.parseInt(this.port.getText());
+		int port = Integer.parseInt(this.port.getText());//TODO deal with exception
 		Account account = readAccount();
-		if(account == null || !account.isValid()) {
-			// get Account
-			final NewAccountRequestClientHandler handler = new NewAccountRequestClientHandler();
-			ChannelFuture f = new Client(server, port, handler).run();
-			f.channel().closeFuture().addListener(new ChannelFutureListener() {
+		if(account != null && account.isValid()) {
+			// login
+			new Thread(new LoginTask(server, port, account.getId(), account.getPassword())).start();
+		} else {
+			// register a new account and login
+			Task<Account> registerTask = new RegisterNewAccountTask(server, port) {
 				@Override
-				public void operationComplete(ChannelFuture future) throws Exception {
-					// save new Account
-					System.out.println(Thread.currentThread());
-					Account newAccount = null;
-					if(handler.response != null && handler.response.isValid())
-						newAccount = new Account().setId(handler.response.getId()).setPassword(handler.response.getPassword());
-					if(newAccount == null) {
-						// TODO inform user failure
-						return;
-					}
-					writeAccount(newAccount);
-					Platform.runLater(new Runnable() {
-						@Override
-						public void run() {
-							System.out.println(Thread.currentThread());
-							System.out.println(GSON.toJson(handler.response));
-							mainApp.showChatView();
-						}
-					});
+				protected void succeeded() {
+					super.succeeded();
+					// login
+					Account account = getValue();
+					if(account != null  && account.isValid())
+						new Thread(new LoginTask(server, port, account.getId(), account.getPassword())).start();
+					else
+						;// TODO register failure
 				}
-			});
+			};
+			new Thread(registerTask).start();
 		}
-		// TODO login
 	}
-	private Account readAccount() {
+	private static Account readAccount() {
 		Account result = null;
 		for(int i = NUMBER_OF_RETRIES ; i >= 1 ; i--) {
 			try(Reader reader = new InputStreamReader(new FileInputStream(Constant.ACCOUNT_FILE_PATH), Constant.UTF8)) {
@@ -110,7 +99,7 @@ public class LoginController {
 		}
 		return result;
 	}
-	private void writeAccount(Account account) {
+	private static void writeAccount(Account account) {
 		if(account == null)
 			throw new NullPointerException("account shouldn't be null");
 		if(!account.isValid())
@@ -142,7 +131,7 @@ public class LoginController {
 		}
 	}
 
-	public static class NewAccountRequestClientHandler extends ChannelHandlerAdapter {
+	private static class NewAccountRequestClientHandler extends ChannelHandlerAdapter {
 		private static final Logger logger = Logger.getLogger(NewAccountRequestClientHandler.class.getName());
 		private static final Request NEW_ACCOUNT_REQUEST = new NewAccountRequest();
 
@@ -165,6 +154,67 @@ public class LoginController {
 			logger.log(Level.WARNING, "Unexpected exception from downstream.", cause);
 			// Close the connection when an exception is raised.
 			ctx.close();
+		}
+	}
+
+	private static class RegisterNewAccountTask extends Task<Account> {
+		protected final String server;
+		protected final int port;
+
+		public RegisterNewAccountTask(String server, int port) {
+			super();
+			this.server = server;
+			this.port = port;
+		}
+
+		@Override
+		protected Account call() throws InterruptedException {
+			final NewAccountRequestClientHandler handler = new NewAccountRequestClientHandler();
+			ChannelFuture f = new Client(server, port, handler).run();
+			try {
+				f.channel().closeFuture().sync();
+			} catch (InterruptedException e) {
+				if(isCancelled())
+					return null;
+				else
+					throw e;
+			}
+			// save new Account
+			Account newAccount = null;
+			if(handler.response != null && handler.response.isValid())
+				newAccount = new Account().setId(handler.response.getId()).setPassword(handler.response.getPassword());
+			if(newAccount == null) {
+				return null;
+			}
+			writeAccount(newAccount);
+			return newAccount;
+		}
+	}
+
+	private class LoginTask extends Task<Boolean> {
+		private final String server;
+		private final int port;
+		private final String id;
+		private final String password;
+
+		public LoginTask(String server, int port, String id, String password) {
+			super();
+			this.server = server;
+			this.port = port;
+			this.id = id;
+			this.password = password;
+		}
+
+		@Override
+		protected Boolean call() throws Exception {
+			// TODO login
+			return true;
+		}
+
+		@Override
+		protected void succeeded() {
+			super.succeeded();
+			mainApp.showChatView();
 		}
 	}
 }
