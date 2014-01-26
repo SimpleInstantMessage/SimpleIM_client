@@ -1,8 +1,6 @@
 package org.simpleim.client;
 
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerAdapter;
-import io.netty.channel.ChannelHandlerContext;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -14,8 +12,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -23,10 +19,9 @@ import javafx.scene.control.TextField;
 
 import org.simpleim.client.model.container.Account;
 import org.simpleim.client.model.netty.Client;
+import org.simpleim.client.model.netty.RegisterAccountClientHandler;
 import org.simpleim.client.util.Constant;
 import org.simpleim.common.message.NewAccountOkResponse;
-import org.simpleim.common.message.NewAccountRequest;
-import org.simpleim.common.message.Request;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
@@ -51,7 +46,7 @@ public class LoginController extends Controller {
 			new Thread(new LoginTask(server, port, account.getId(), account.getPassword())).start();
 		} else {
 			// register a new account and login
-			Task<Account> registerTask = new RegisterNewAccountTask(server, port) {
+			Task<Account> registerTask = new RegisterAccountTask(server, port) {
 				@Override
 				protected void succeeded() {
 					super.succeeded();
@@ -124,37 +119,11 @@ public class LoginController extends Controller {
 		}
 	}
 
-	private static class NewAccountRequestClientHandler extends ChannelHandlerAdapter {
-		private static final Logger logger = Logger.getLogger(NewAccountRequestClientHandler.class.getName());
-		private static final Request NEW_ACCOUNT_REQUEST = new NewAccountRequest();
-
-		private NewAccountOkResponse response;
-
-		@Override
-		public void channelActive(ChannelHandlerContext ctx) {
-			ctx.writeAndFlush(NEW_ACCOUNT_REQUEST);
-		}
-
-		@Override
-		public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-			response = (NewAccountOkResponse) msg;
-			ctx.close();
-		}
-
-		@Override
-		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-			//TODO inform user the exception
-			logger.log(Level.WARNING, "Unexpected exception from downstream.", cause);
-			// Close the connection when an exception is raised.
-			ctx.close();
-		}
-	}
-
-	private static class RegisterNewAccountTask extends Task<Account> {
+	private static class RegisterAccountTask extends Task<Account> {
 		protected final String server;
 		protected final int port;
 
-		public RegisterNewAccountTask(String server, int port) {
+		public RegisterAccountTask(String server, int port) {
 			super();
 			this.server = server;
 			this.port = port;
@@ -162,7 +131,7 @@ public class LoginController extends Controller {
 
 		@Override
 		protected Account call() throws InterruptedException {
-			final NewAccountRequestClientHandler handler = new NewAccountRequestClientHandler();
+			final RegisterAccountClientHandler handler = new RegisterAccountClientHandler();
 			ChannelFuture f = new Client(server, port, handler).run();
 			try {
 				f.channel().closeFuture().sync();
@@ -174,8 +143,9 @@ public class LoginController extends Controller {
 			}
 			// save new Account
 			Account newAccount = null;
-			if(handler.response != null && handler.response.isValid())
-				newAccount = new Account().setId(handler.response.getId()).setPassword(handler.response.getPassword());
+			NewAccountOkResponse response = handler.getOkResponse();
+			if(response != null && response.isValid())
+				newAccount = new Account().setId(response.getId()).setPassword(response.getPassword());
 			if(newAccount == null) {
 				return null;
 			}
