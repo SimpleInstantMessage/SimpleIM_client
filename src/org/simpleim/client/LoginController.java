@@ -32,22 +32,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
-public class LoginController {
+public class LoginController extends Controller {
 	private static final int NUMBER_OF_RETRIES = 5;
 	private static final Gson GSON = new Gson();
-	private MainApp mainApp;
+
 	@FXML
 	private TextField server;
 	@FXML
 	private TextField port;
-
-	/**
-	 * Is called by the main application to give a reference back to itself.
-	 * @param mainApp
-	 */
-	public void setMainApp(MainApp mainApp) {
-		this.mainApp = mainApp;
-	}
 
 	@FXML
 	private void handleLogin() {
@@ -74,6 +66,7 @@ public class LoginController {
 			new Thread(registerTask).start();
 		}
 	}
+
 	private static Account readAccount() {
 		Account result = null;
 		for(int i = NUMBER_OF_RETRIES ; i >= 1 ; i--) {
