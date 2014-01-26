@@ -24,16 +24,17 @@ public class MainApp extends Application {
 		showLoginView();
 	}
 
-	/*package*/ void showLoginView() {
+	/*package*/ LoginController showLoginView() {
 		LoginController controller = showScene("view/Login.fxml");
-		controller.setMainApp(this);
+		return controller;
 	}
 
-	/*package*/ void showChatView() {
-		showScene("view/Chat.fxml");
+	/*package*/ ChatController showChatView() {
+		ChatController controller = showScene("view/Chat.fxml");
+		return controller;
 	}
 
-	private <T> T showScene(String rootNotePath) {
+	private <T extends Controller> T showScene(String rootNotePath) {
 		try {
 			FXMLLoader loader = new FXMLLoader(MainApp.class.getResource(rootNotePath));
 			mRootLayout = (Parent) loader.load();
@@ -41,7 +42,9 @@ public class MainApp extends Application {
 			mPrimaryStage.setScene(scene);
 			mPrimaryStage.sizeToScene();
 			mPrimaryStage.show();
-			return loader.getController();
+			T controller = loader.getController();
+			controller.setMainApp(this);
+			return controller;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
