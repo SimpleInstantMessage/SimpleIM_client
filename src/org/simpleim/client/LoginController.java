@@ -13,14 +13,22 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 
 import org.simpleim.client.model.container.Account;
+import org.simpleim.client.model.netty.ChatClientHandler;
+import org.simpleim.client.model.netty.ChatClientHandler.ChatClientListener;
+import org.simpleim.client.model.netty.ChatClientHandler.ChatClientListenerAdapter;
 import org.simpleim.client.model.netty.Client;
 import org.simpleim.client.model.netty.RegisterAccountClientHandler;
 import org.simpleim.client.util.Constant;
+import org.simpleim.common.message.LoginFailureResponse;
+import org.simpleim.common.message.LoginOkResponse;
 import org.simpleim.common.message.NewAccountOkResponse;
 
 import com.google.gson.Gson;
@@ -119,6 +127,48 @@ public class LoginController extends Controller {
 		}
 	}
 
+	private final ChatClientListener mChatClientListener = new ChatClientListenerAdapter() {
+		@Override
+		public void onLoginOk(final ChatClientHandler handler, final LoginOkResponse response) {
+			if(Platform.isFxApplicationThread()) {
+				loginOk(handler, response);
+			} else {
+				Platform.runLater(new Runnable() {
+					@Override
+					public void run() {
+						loginOk(handler, response);
+					}
+				});
+			}
+		}
+		@Override
+		public void onLoginFailure(ChatClientHandler handler, LoginFailureResponse response) {
+			//TODO
+			switch(response.getCause()) {
+			case ID_NOT_FOUND:
+				System.out.println("ID_NOT_FOUND");
+				break;
+			case PASSWORD_INCORRECT:
+				System.out.println("PASSWORD_INCORRECT");
+				break;
+			}
+		}
+
+		/**
+		 * <strong>Note: </strong> must be run in JavaFX Application Thread
+		 * @see Platform#isFxApplicationThread()
+		 */
+		private void loginOk(ChatClientHandler handler, LoginOkResponse response) {
+			ChatController controller = mainApp.showChatView();
+			controller.setChatClientHandler(handler);
+			ObservableList<Account> users = FXCollections.observableArrayList();
+			for(String userId : response.getOnlineUsersIds())
+				users.add(new Account().setId(userId));
+			controller.setUserList(users);
+			handler.removeListener(mChatClientListener);
+		}
+	};
+
 	private static class RegisterAccountTask extends Task<Account> {
 		protected final String server;
 		protected final int port;
@@ -170,14 +220,10 @@ public class LoginController extends Controller {
 
 		@Override
 		protected Boolean call() throws Exception {
-			// TODO login
+			ChatClientHandler handler = new ChatClientHandler(id, password);
+			handler.addListenerIfAbsent(mChatClientListener);
+			new Client(server, port, handler).run();
 			return true;
-		}
-
-		@Override
-		protected void succeeded() {
-			super.succeeded();
-			mainApp.showChatView();
 		}
 	}
 }
