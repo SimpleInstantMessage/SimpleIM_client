@@ -6,11 +6,13 @@ import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 
 import org.simpleim.client.model.container.Account;
@@ -18,12 +20,14 @@ import org.simpleim.client.model.netty.ChatClientHandler;
 import org.simpleim.client.model.netty.ChatClientHandler.ChatClientListener;
 import org.simpleim.client.model.netty.ChatClientHandler.ChatClientListenerAdapter;
 import org.simpleim.common.message.ChatMessage;
+import org.simpleim.common.message.LogoutNotification;
 import org.simpleim.common.message.ReceiveMessageNotification;
 import org.simpleim.common.message.SendMessageRequest;
 import org.simpleim.common.message.User;
 
 public class ChatController extends Controller {
 	private ChatClientHandler mChatClientHandler;
+	private boolean closing = false;
 	private ObservableList<Account> mUserList;
 	@FXML
 	private ListView<Account> userList;
@@ -50,6 +54,18 @@ public class ChatController extends Controller {
 		return this;
 	}
 
+	@Override
+	public void setMainApp(MainApp mainApp) {
+		super.setMainApp(mainApp);
+		mainApp.getPrimaryStage().getScene().getWindow().setOnCloseRequest(new EventHandler<WindowEvent>() {
+			@Override
+			public void handle(WindowEvent event) {
+				mChatClientHandler.logout();
+				closing = true;
+				event.consume();
+			}
+		});
+	}
 	@FXML
 	private void initialize() {
 		userList.setCellFactory(new Callback<ListView<Account>, ListCell<Account>>() {
@@ -96,26 +112,50 @@ public class ChatController extends Controller {
 
 	private final ChatClientListener mChatListener = new ChatClientListenerAdapter() {
 		@Override
-		public void onReceiveMessage(final ChatClientHandler handler, final ReceiveMessageNotification message) {
-			if(Platform.isFxApplicationThread()) {
-				receiveMessage(handler, message);
+		public void onReceiveChatMessage(final ChatClientHandler handler, final ReceiveMessageNotification message) {
+			runInJavaFXApplicationThread(new Runnable() {
+				@Override
+				public void run() {
+					if(userList.getSelectionModel().getSelectedItem().getId().equals(message.getSender().getId())) {
+						appendChatLog(message.getMessage().getBody(), message.getSender(), message.getMessage().getSendTime());
+					} // TODO else
+				}
+			});
+		}
+
+		@Override
+		public void onReceiveLogoutNotification(final ChatClientHandler handler, final LogoutNotification message) {
+			if(message.getUserLoggedOutId().equals(handler.getAccount().getId())) {
+//				Platform.exit();
 			} else {
-				Platform.runLater(new Runnable() {
+				runInJavaFXApplicationThread(new Runnable() {
 					@Override
 					public void run() {
-						receiveMessage(handler, message);
+						for(Account account : mUserList) {
+							if(message.getUserLoggedOutId().equals(account.getId())) {
+								mUserList.remove(account);
+								break;
+							}
+						}
 					}
 				});
 			}
 		}
 
-		/**
-		 * <strong>Note: </strong> must be run in JavaFX Application Thread
-		 * @see Platform#isFxApplicationThread()
-		 */
-		private void receiveMessage(ChatClientHandler handler, ReceiveMessageNotification message) {
-			if(userList.getSelectionModel().getSelectedItem().getId().equals(message.getSender().getId())) {
-				appendChatLog(message.getMessage().getBody(), message.getSender(), message.getMessage().getSendTime());
+		@Override
+		public void onChannelInactive(ChatClientHandler handler) {
+			if(closing) {
+				Platform.exit();
+			} else {
+				// inform user
+			}
+		}
+
+		private void runInJavaFXApplicationThread(Runnable run) {
+			if(Platform.isFxApplicationThread()) {
+				run.run();
+			} else {
+				Platform.runLater(run);
 			}
 		}
 	};

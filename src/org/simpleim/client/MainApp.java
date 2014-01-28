@@ -24,6 +24,10 @@ public class MainApp extends Application {
 		showLoginView();
 	}
 
+	/*package*/ Stage getPrimaryStage() {
+		return mPrimaryStage;
+	}
+
 	/*package*/ LoginController showLoginView() {
 		LoginController controller = showScene("view/Login.fxml");
 		return controller;

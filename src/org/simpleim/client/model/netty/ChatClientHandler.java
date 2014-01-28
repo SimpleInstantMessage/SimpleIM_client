@@ -11,6 +11,8 @@ import org.simpleim.client.model.container.Account;
 import org.simpleim.common.message.LoginFailureResponse;
 import org.simpleim.common.message.LoginOkResponse;
 import org.simpleim.common.message.LoginRequest;
+import org.simpleim.common.message.LogoutNotification;
+import org.simpleim.common.message.LogoutRequest;
 import org.simpleim.common.message.ReceiveMessageNotification;
 import org.simpleim.common.message.SendMessageRequest;
 import org.simpleim.common.message.UpdateFinishedNotification;
@@ -18,6 +20,7 @@ import org.simpleim.common.message.UpdateFinishedNotification;
 public class ChatClientHandler extends ChannelHandlerAdapter {
 	private static final Logger logger = Logger.getLogger(ChatClientHandler.class.getName());
 	private static final UpdateFinishedNotification UPDATE_FINISHED_NOTIFICATION = new UpdateFinishedNotification();
+	private static final LogoutRequest LOGOUT_REQUEST = new LogoutRequest();
 	private final Account mAccount = new Account();
 	private final CopyOnWriteArrayList<ChatClientListener> mListeners = new CopyOnWriteArrayList<>();
 	private ChannelHandlerContext mChannelHandlerContext;
@@ -49,10 +52,19 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 			//TODO close?
 		} else if (msg instanceof ReceiveMessageNotification) {
 			for(ChatClientListener listener : mListeners)
-				listener.onReceiveMessage(this, (ReceiveMessageNotification) msg);
+				listener.onReceiveChatMessage(this, (ReceiveMessageNotification) msg);
+		} else if (msg instanceof LogoutNotification) {
+			for(ChatClientListener listener : mListeners)
+				listener.onReceiveLogoutNotification(this, (LogoutNotification) msg);
 		} else {
 			//TODO unknown failure
 		}
+	}
+
+	@Override
+	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+		for(ChatClientListener listener : mListeners)
+			listener.onChannelInactive(this);
 	}
 
 	@Override
@@ -69,6 +81,12 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 		mChannelHandlerContext.writeAndFlush(request);
 	}
 
+	public void logout() {
+		if(mChannelHandlerContext == null)
+			throw new IllegalStateException("channel isn't active now.");
+		mChannelHandlerContext.writeAndFlush(LOGOUT_REQUEST);
+	}
+
 	public Account getAccount() {
 		return mAccount;
 	}
@@ -83,7 +101,9 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 	public static interface ChatClientListener {
 		public void onLoginOk(ChatClientHandler handler, LoginOkResponse response);
 		public void onLoginFailure(ChatClientHandler handler, LoginFailureResponse response);
-		public void onReceiveMessage(ChatClientHandler handler, ReceiveMessageNotification message);
+		public void onReceiveChatMessage(ChatClientHandler handler, ReceiveMessageNotification message);
+		public void onReceiveLogoutNotification(ChatClientHandler handler, LogoutNotification message);
+		public void onChannelInactive(ChatClientHandler handler);
 	}
 	public static class ChatClientListenerAdapter implements ChatClientListener {
 		@Override
@@ -91,6 +111,10 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 		@Override
 		public void onLoginFailure(ChatClientHandler handler, LoginFailureResponse response) {}
 		@Override
-		public void onReceiveMessage(ChatClientHandler handler, ReceiveMessageNotification message) {}
+		public void onReceiveChatMessage(ChatClientHandler handler, ReceiveMessageNotification message) {}
+		@Override
+		public void onReceiveLogoutNotification(ChatClientHandler handler, LogoutNotification message) {}
+		@Override
+		public void onChannelInactive(ChatClientHandler handler) {}
 	}
 }
