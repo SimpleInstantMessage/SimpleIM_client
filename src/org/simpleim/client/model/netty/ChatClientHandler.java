@@ -11,6 +11,8 @@ import org.simpleim.client.model.container.Account;
 import org.simpleim.common.message.LoginFailureResponse;
 import org.simpleim.common.message.LoginOkResponse;
 import org.simpleim.common.message.LoginRequest;
+import org.simpleim.common.message.ReceiveMessageNotification;
+import org.simpleim.common.message.SendMessageRequest;
 import org.simpleim.common.message.UpdateFinishedNotification;
 
 public class ChatClientHandler extends ChannelHandlerAdapter {
@@ -18,6 +20,7 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 	private static final UpdateFinishedNotification UPDATE_FINISHED_NOTIFICATION = new UpdateFinishedNotification();
 	private final Account mAccount = new Account();
 	private final CopyOnWriteArrayList<ChatClientListener> mListeners = new CopyOnWriteArrayList<>();
+	private ChannelHandlerContext mChannelHandlerContext;
 
 	public ChatClientHandler(String id, String password) {
 		super();
@@ -31,6 +34,7 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		ctx.writeAndFlush(new LoginRequest().setId(mAccount.getId()).setPassword(mAccount.getPassword()));
+		mChannelHandlerContext = ctx;
 	}
 
 	@Override
@@ -43,6 +47,9 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 			for(ChatClientListener listener : mListeners)
 				listener.onLoginFailure(this, (LoginFailureResponse) msg);
 			//TODO close?
+		} else if (msg instanceof ReceiveMessageNotification) {
+			for(ChatClientListener listener : mListeners)
+				listener.onReceiveMessage(this, (ReceiveMessageNotification) msg);
 		} else {
 			//TODO unknown failure
 		}
@@ -56,6 +63,16 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 		ctx.close();
 	}
 
+	public void send(SendMessageRequest request) {
+		if(mChannelHandlerContext == null)
+			throw new IllegalStateException("channel isn't active now.");
+		mChannelHandlerContext.writeAndFlush(request);
+	}
+
+	public Account getAccount() {
+		return mAccount;
+	}
+
 	public boolean addListenerIfAbsent(ChatClientListener listener) {
 		return mListeners.addIfAbsent(listener);
 	}
@@ -66,11 +83,14 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 	public static interface ChatClientListener {
 		public void onLoginOk(ChatClientHandler handler, LoginOkResponse response);
 		public void onLoginFailure(ChatClientHandler handler, LoginFailureResponse response);
+		public void onReceiveMessage(ChatClientHandler handler, ReceiveMessageNotification message);
 	}
 	public static class ChatClientListenerAdapter implements ChatClientListener {
 		@Override
 		public void onLoginOk(ChatClientHandler handler, LoginOkResponse response) {}
 		@Override
 		public void onLoginFailure(ChatClientHandler handler, LoginFailureResponse response) {}
+		@Override
+		public void onReceiveMessage(ChatClientHandler handler, ReceiveMessageNotification message) {}
 	}
 }
