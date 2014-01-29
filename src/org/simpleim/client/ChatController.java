@@ -53,6 +53,8 @@ public class ChatController extends Controller {
 	public ChatController setUserList(ObservableList<Account> userList) {
 		mUserList = userList;
 		this.userList.setItems(mUserList);
+		if(!mUserList.isEmpty())
+			this.userList.getSelectionModel().selectFirst();
 		return this;
 	}
 
@@ -151,6 +153,8 @@ public class ChatController extends Controller {
 								break;
 							}
 						}
+						if(!mUserList.isEmpty())
+							userList.getSelectionModel().selectFirst();
 					}
 				});
 			}
