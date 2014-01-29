@@ -166,6 +166,7 @@ public class LoginController extends Controller {
 				users.add(new Account().setId(userId));
 			controller.setUserList(users);
 			handler.removeListener(mChatClientListener);
+			handler.notifyUpdateFinished();
 		}
 	};
 

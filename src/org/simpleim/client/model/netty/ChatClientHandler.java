@@ -49,7 +49,6 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 		} else if (msg instanceof LoginOkResponse) {
 			for(ChatClientListener listener : mListeners)
 				listener.onLoginOk(this, (LoginOkResponse) msg);
-			ctx.writeAndFlush(UPDATE_FINISHED_NOTIFICATION);
 		} else if (msg instanceof LoginFailureResponse) {
 			for(ChatClientListener listener : mListeners)
 				listener.onLoginFailure(this, (LoginFailureResponse) msg);
@@ -80,15 +79,21 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 	}
 
 	public void send(SendMessageRequest request) {
-		if(mChannelHandlerContext == null)
-			throw new IllegalStateException("channel isn't active now.");
-		mChannelHandlerContext.writeAndFlush(request);
+		getChannelHandlerContext().writeAndFlush(request);
+	}
+
+	public void notifyUpdateFinished() {
+		getChannelHandlerContext().writeAndFlush(UPDATE_FINISHED_NOTIFICATION);
 	}
 
 	public void logout() {
+		getChannelHandlerContext().writeAndFlush(LOGOUT_REQUEST);
+	}
+
+	private ChannelHandlerContext getChannelHandlerContext() {
 		if(mChannelHandlerContext == null)
 			throw new IllegalStateException("channel isn't active now.");
-		mChannelHandlerContext.writeAndFlush(LOGOUT_REQUEST);
+		return mChannelHandlerContext;
 	}
 
 	public Account getAccount() {

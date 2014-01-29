@@ -158,7 +158,7 @@ public class ChatController extends Controller {
 			if(closing) {
 				Platform.exit();
 			} else {
-				// inform user
+				// TODO inform user
 			}
 		}
 
