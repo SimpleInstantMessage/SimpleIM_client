@@ -20,6 +20,7 @@ import org.simpleim.client.model.netty.ChatClientHandler;
 import org.simpleim.client.model.netty.ChatClientHandler.ChatClientListener;
 import org.simpleim.client.model.netty.ChatClientHandler.ChatClientListenerAdapter;
 import org.simpleim.common.message.ChatMessage;
+import org.simpleim.common.message.LoginNotification;
 import org.simpleim.common.message.LogoutNotification;
 import org.simpleim.common.message.ReceiveMessageNotification;
 import org.simpleim.common.message.SendMessageRequest;
@@ -119,6 +120,16 @@ public class ChatController extends Controller {
 					if(userList.getSelectionModel().getSelectedItem().getId().equals(message.getSender().getId())) {
 						appendChatLog(message.getMessage().getBody(), message.getSender(), message.getMessage().getSendTime());
 					} // TODO else
+				}
+			});
+		}
+
+		@Override
+		public void onReceiveLoginNotification(final ChatClientHandler handler, final LoginNotification message) {
+			runInJavaFXApplicationThread(new Runnable() {
+				@Override
+				public void run() {
+					mUserList.add(new Account().setId(message.getNewUserId()));
 				}
 			});
 		}

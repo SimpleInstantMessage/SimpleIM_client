@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import org.simpleim.client.model.container.Account;
 import org.simpleim.common.message.LoginFailureResponse;
+import org.simpleim.common.message.LoginNotification;
 import org.simpleim.common.message.LoginOkResponse;
 import org.simpleim.common.message.LoginRequest;
 import org.simpleim.common.message.LogoutNotification;
@@ -42,7 +43,10 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		if (msg instanceof LoginOkResponse) {
+		if (msg instanceof ReceiveMessageNotification) {
+			for(ChatClientListener listener : mListeners)
+				listener.onReceiveChatMessage(this, (ReceiveMessageNotification) msg);
+		} else if (msg instanceof LoginOkResponse) {
 			for(ChatClientListener listener : mListeners)
 				listener.onLoginOk(this, (LoginOkResponse) msg);
 			ctx.writeAndFlush(UPDATE_FINISHED_NOTIFICATION);
@@ -50,9 +54,9 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 			for(ChatClientListener listener : mListeners)
 				listener.onLoginFailure(this, (LoginFailureResponse) msg);
 			//TODO close?
-		} else if (msg instanceof ReceiveMessageNotification) {
+		} else if (msg instanceof LoginNotification) {
 			for(ChatClientListener listener : mListeners)
-				listener.onReceiveChatMessage(this, (ReceiveMessageNotification) msg);
+				listener.onReceiveLoginNotification(this, (LoginNotification) msg);
 		} else if (msg instanceof LogoutNotification) {
 			for(ChatClientListener listener : mListeners)
 				listener.onReceiveLogoutNotification(this, (LogoutNotification) msg);
@@ -101,6 +105,7 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 	public static interface ChatClientListener {
 		public void onLoginOk(ChatClientHandler handler, LoginOkResponse response);
 		public void onLoginFailure(ChatClientHandler handler, LoginFailureResponse response);
+		public void onReceiveLoginNotification(ChatClientHandler handler, LoginNotification message);
 		public void onReceiveChatMessage(ChatClientHandler handler, ReceiveMessageNotification message);
 		public void onReceiveLogoutNotification(ChatClientHandler handler, LogoutNotification message);
 		public void onChannelInactive(ChatClientHandler handler);
@@ -110,6 +115,8 @@ public class ChatClientHandler extends ChannelHandlerAdapter {
 		public void onLoginOk(ChatClientHandler handler, LoginOkResponse response) {}
 		@Override
 		public void onLoginFailure(ChatClientHandler handler, LoginFailureResponse response) {}
+		@Override
+		public void onReceiveLoginNotification(ChatClientHandler handler, LoginNotification message) {}
 		@Override
 		public void onReceiveChatMessage(ChatClientHandler handler, ReceiveMessageNotification message) {}
 		@Override
