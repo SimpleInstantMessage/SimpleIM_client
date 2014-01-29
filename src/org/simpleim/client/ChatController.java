@@ -12,6 +12,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.scene.paint.Color;
 import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 
@@ -130,6 +131,8 @@ public class ChatController extends Controller {
 				@Override
 				public void run() {
 					mUserList.add(new Account().setId(message.getNewUserId()));
+					if(mUserList.size() == 1)
+						userList.getSelectionModel().selectFirst();
 				}
 			});
 		}
@@ -171,12 +174,18 @@ public class ChatController extends Controller {
 		}
 	};
 
-	private static class AccountFormatListCell extends ListCell<Account> {
+	private class AccountFormatListCell extends ListCell<Account> {
 		@Override
 		protected void updateItem(Account item, boolean empty) {
 			super.updateItem(item, empty);
-			setText(item == null ? "" : item.getNickname() == null ? item.getId() : item.getNickname());
-			// TODO online?
+			if(item == null)
+				return;
+			setText(item.getNickname() == null ? item.getId() : item.getNickname());
+			if(item.getId().equals(mChatClientHandler.getAccount().getId())) {
+				setText(getText() + " (me)");
+				setTextFill(Color.ORANGE);
+			}
+			// TODO is it online?
 		}
 	}
 }
