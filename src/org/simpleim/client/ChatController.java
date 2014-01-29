@@ -1,7 +1,5 @@
 package org.simpleim.client;
 
-import java.util.Date;
-
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -28,6 +26,7 @@ import org.simpleim.common.message.SendMessageRequest;
 import org.simpleim.common.message.User;
 
 public class ChatController extends Controller {
+	private static final String FORMATTER = "%1$tF %1$ta %1$tT %tZ \t%s%n%s%n%n";
 	private ChatClientHandler mChatClientHandler;
 	private boolean closing = false;
 	private ObservableList<Account> mUserList;
@@ -81,7 +80,12 @@ public class ChatController extends Controller {
 		userList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Account>() {
 			@Override
 			public void changed(ObservableValue<? extends Account> observable, Account oldValue, Account newValue) {
-				chatLog.clear();
+				if(oldValue != null)
+					oldValue.setAttachment(chatLog.getText());
+				if(newValue.getAttachment() != null)
+					chatLog.setText((String) newValue.getAttachment());
+				else
+					chatLog.clear();
 				// TODO 更新标题栏
 			}
 		});
@@ -109,9 +113,10 @@ public class ChatController extends Controller {
 	}
 
 	private void appendChatLog(String body, User user, long time) {
-		chatLog.appendText(new Date(time).toString() + " \t");
-		chatLog.appendText(user.getNikename() != null ? user.getNikename() : user.getId());
-		chatLog.appendText('\n' + body + '\n');
+		chatLog.appendText(formatChatMessage(body, user, time));
+	}
+	private static String formatChatMessage(String body, User user, long time) {
+		return String.format(FORMATTER, time, user.getNikename() != null ? user.getNikename() : user.getId(), body);
 	}
 
 	private final ChatClientListener mChatListener = new ChatClientListenerAdapter() {
@@ -120,9 +125,22 @@ public class ChatController extends Controller {
 			runInJavaFXApplicationThread(new Runnable() {
 				@Override
 				public void run() {
-					if(userList.getSelectionModel().getSelectedItem().getId().equals(message.getSender().getId())) {
+					String senderId = message.getSender().getId();
+					if(senderId.equals(userList.getSelectionModel().getSelectedItem().getId())) {
 						appendChatLog(message.getMessage().getBody(), message.getSender(), message.getMessage().getSendTime());
-					} // TODO else
+					} else {
+						for(Account account : mUserList) {
+							if(senderId.equals(account.getId())) {
+								String chatLog = (String) account.getAttachment();
+								if(chatLog == null)
+									chatLog = "";
+								account.setAttachment( chatLog + formatChatMessage(
+										message.getMessage().getBody(), message.getSender(), message.getMessage().getSendTime()));
+								// TODO notify chat log updated
+								break;
+							}
+						}
+					}
 				}
 			});
 		}

@@ -4,6 +4,7 @@ public class Account implements Cloneable {
 	private String id;
 	private String password;
 	private String nickname;
+	private Object attachment;
 
 	/**
 	 * @return the id
@@ -42,6 +43,19 @@ public class Account implements Cloneable {
 	 */
 	public Account setNickname(String nickname) {
 		this.nickname = nickname;
+		return this;
+	}
+	/**
+	 * @return the attachment
+	 */
+	public Object getAttachment() {
+		return attachment;
+	}
+	/**
+	 * @param attachment the attachment to set
+	 */
+	public Account setAttachment(Object attachment) {
+		this.attachment = attachment;
 		return this;
 	}
 
