@@ -1,6 +1,5 @@
 package org.simpleim.client;
 
-import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
@@ -180,19 +179,20 @@ public class ChatController extends Controller {
 
 		@Override
 		public void onChannelInactive(ChatClientHandler handler) {
-			if(closing) {
-				Platform.exit();
-			} else {
-				// TODO inform user
-			}
+			runInJavaFXApplicationThread(new Runnable() {
+				@Override
+				public void run() {
+					changeToLoginScene();
+					if(!closing)
+						;// TODO inform user
+				}
+			});
 		}
 
-		private void runInJavaFXApplicationThread(Runnable run) {
-			if(Platform.isFxApplicationThread()) {
-				run.run();
-			} else {
-				Platform.runLater(run);
-			}
+		private void changeToLoginScene() {
+			mChatClientHandler.removeListener(mChatListener);
+			mainApp.getPrimaryStage().getScene().getWindow().setOnCloseRequest(null);
+			mainApp.showLoginView();
 		}
 	};
 

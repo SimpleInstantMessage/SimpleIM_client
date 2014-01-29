@@ -130,16 +130,12 @@ public class LoginController extends Controller {
 	private final ChatClientListener mChatClientListener = new ChatClientListenerAdapter() {
 		@Override
 		public void onLoginOk(final ChatClientHandler handler, final LoginOkResponse response) {
-			if(Platform.isFxApplicationThread()) {
-				loginOk(handler, response);
-			} else {
-				Platform.runLater(new Runnable() {
-					@Override
-					public void run() {
-						loginOk(handler, response);
-					}
-				});
-			}
+			runInJavaFXApplicationThread(new Runnable() {
+				@Override
+				public void run() {
+					changeToChatScene(handler, response);
+				}
+			});
 		}
 		@Override
 		public void onLoginFailure(ChatClientHandler handler, LoginFailureResponse response) {
@@ -158,7 +154,7 @@ public class LoginController extends Controller {
 		 * <strong>Note: </strong> must be run in JavaFX Application Thread
 		 * @see Platform#isFxApplicationThread()
 		 */
-		private void loginOk(ChatClientHandler handler, LoginOkResponse response) {
+		private void changeToChatScene(ChatClientHandler handler, LoginOkResponse response) {
 			ChatController controller = mainApp.showChatView();
 			controller.setChatClientHandler(handler);
 			ObservableList<Account> users = FXCollections.observableArrayList();

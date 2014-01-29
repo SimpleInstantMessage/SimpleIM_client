@@ -1,5 +1,7 @@
 package org.simpleim.client;
 
+import javafx.application.Platform;
+
 
 public class Controller {
 	protected MainApp mainApp;
@@ -10,5 +12,13 @@ public class Controller {
 	 */
 	public void setMainApp(MainApp mainApp) {
 		this.mainApp = mainApp;
+	}
+
+	protected static void runInJavaFXApplicationThread(Runnable run) {
+		if(Platform.isFxApplicationThread()) {
+			run.run();
+		} else {
+			Platform.runLater(run);
+		}
 	}
 }
