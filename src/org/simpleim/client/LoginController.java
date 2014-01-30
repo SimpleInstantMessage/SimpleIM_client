@@ -18,7 +18,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Dialogs;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 
 import org.simpleim.client.model.container.Account;
 import org.simpleim.client.model.netty.ChatClientHandler;
@@ -43,6 +45,7 @@ public class LoginController extends Controller {
 	private TextField server;
 	@FXML
 	private TextField port;
+	protected static Stage stage;
 
 	@FXML
 	private void handleLogin() {
@@ -63,7 +66,7 @@ public class LoginController extends Controller {
 					if(account != null  && account.isValid())
 						new Thread(new LoginTask(server, port, account.getId(), account.getPassword())).start();
 					else
-						;// TODO register failure
+						Dialogs.showWarningDialog(stage, "Your ID or Password is wrong!", "Warning", "Error");;// TODO register failure
 				}
 			};
 			new Thread(registerTask).start();
@@ -84,7 +87,7 @@ public class LoginController extends Controller {
 				// retry
 				e.printStackTrace();
 			} catch (FileNotFoundException e) {
-				//TODO deal with situation if ACCOUNT_FILE_PATH is a directory and so on
+				Dialogs.showWarningDialog(stage, "Something is wrong!", "Warning", "Warning");//TODO deal with situation if ACCOUNT_FILE_PATH is a directory and so on
 				System.out.println("no account, get a new account.");
 //				e.printStackTrace();
 				break;
@@ -114,7 +117,7 @@ public class LoginController extends Controller {
 				GSON.toJson(account, writer);
 				break;
 			} catch (FileNotFoundException e) {
-				//TODO deal with situation if ACCOUNT_FILE_PATH is a directory and so on
+				Dialogs.showWarningDialog(stage, "Something is wrong!", "Warning", "Warning");//TODO deal with situation if ACCOUNT_FILE_PATH is a directory and so on
 				// retry
 				e.printStackTrace();
 			} catch (JsonIOException e) {
