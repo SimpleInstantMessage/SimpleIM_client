@@ -66,8 +66,20 @@ public class LoginController extends Controller {
 					if(account != null  && account.isValid())
 						new Thread(new LoginTask(server, port, account.getId(), account.getPassword())).start();
 					else
-						Dialogs.showWarningDialog(stage, "Your ID or Password is wrong!", "Warning", "Error");;// TODO register failure
+						Dialogs.showErrorDialog(stage, "New ccount registration failed! You can try again.", "REGISTRATION FAILED", "Error", getException());
 				}
+				@Override
+				protected void failed() {
+					super.failed();
+					if(getException() instanceof FileNotFoundException)
+						Dialogs.showErrorDialog(stage, 
+								"Cannot create account file, bacause there already have a directory named "
+										+ Constant.ACCOUNT_FILE_PATH + ". Please delete it and try again.",
+								"CANNOT CREATE ACCOUNT FILE", "Error", getException());
+					else
+						Dialogs.showErrorDialog(stage, "New ccount registration failed! You can try again.", "REGISTRATION FAILED", "Error", getException());
+				}
+				
 			};
 			new Thread(registerTask).start();
 		}
@@ -87,7 +99,7 @@ public class LoginController extends Controller {
 				// retry
 				e.printStackTrace();
 			} catch (FileNotFoundException e) {
-				Dialogs.showWarningDialog(stage, "Something is wrong!", "Warning", "Warning");//TODO deal with situation if ACCOUNT_FILE_PATH is a directory and so on
+				//TODO deal with situation if ACCOUNT_FILE_PATH is a directory and so on
 				System.out.println("no account, get a new account.");
 //				e.printStackTrace();
 				break;
@@ -98,7 +110,7 @@ public class LoginController extends Controller {
 		}
 		return result;
 	}
-	private static void writeAccount(Account account) {
+	private static void writeAccount(Account account) throws FileNotFoundException {
 		if(account == null)
 			throw new NullPointerException("account shouldn't be null");
 		if(!account.isValid())
@@ -117,9 +129,7 @@ public class LoginController extends Controller {
 				GSON.toJson(account, writer);
 				break;
 			} catch (FileNotFoundException e) {
-				Dialogs.showWarningDialog(stage, "Something is wrong!", "Warning", "Warning");//TODO deal with situation if ACCOUNT_FILE_PATH is a directory and so on
-				// retry
-				e.printStackTrace();
+				throw e;
 			} catch (JsonIOException e) {
 				// retry
 				e.printStackTrace();
@@ -180,7 +190,7 @@ public class LoginController extends Controller {
 		}
 
 		@Override
-		protected Account call() throws InterruptedException {
+		protected Account call() throws InterruptedException, FileNotFoundException {
 			final RegisterAccountClientHandler handler = new RegisterAccountClientHandler();
 			ChannelFuture f = new Client(server, port, handler).run();
 			try {
@@ -191,6 +201,8 @@ public class LoginController extends Controller {
 				else
 					throw e;
 			}
+			if(f.cause() != null)
+				throw new RuntimeException(f.cause());
 			// save new Account
 			Account newAccount = null;
 			NewAccountOkResponse response = handler.getOkResponse();
