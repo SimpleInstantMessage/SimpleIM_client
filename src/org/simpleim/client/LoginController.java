@@ -160,6 +160,9 @@ public class LoginController extends Controller {
 			case PASSWORD_INCORRECT:
 				System.out.println("PASSWORD_INCORRECT");
 				break;
+			case IILEGAL_LOGIN:
+				System.err.println("IILEGAL_LOGIN");
+				break;
 			}
 		}
 
