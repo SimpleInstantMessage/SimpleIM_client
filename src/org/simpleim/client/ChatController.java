@@ -87,18 +87,7 @@ public class ChatController extends Controller {
 				return new AccountFormatListCell();
 			}
 		});
-		userList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Account>() {
-			@Override
-			public void changed(ObservableValue<? extends Account> observable, Account oldValue, Account newValue) {
-				if(oldValue != null)
-					oldValue.setAttachment(chatLog.getText());
-				if(newValue.getAttachment() != null)
-					chatLog.setText((String) newValue.getAttachment());
-				else
-					chatLog.clear();
-				// TODO 更新标题栏
-			}
-		});
+		userList.getSelectionModel().selectedItemProperty().addListener(mSelectedItemChangeListener);
 	}
 
 	@FXML
@@ -122,12 +111,52 @@ public class ChatController extends Controller {
 		appendChatLog(body, request.getSender(), request.getMessage().getSendTime());
 	}
 
+	/**
+	 * Refreshes the {@link #userList}. This is only necessary if an item that is already in
+	 * the list is changed. New and deleted items are refreshed automatically.
+	 * <p>
+	 * This is a workaround because otherwise we would need to use property
+	 * bindings in the model class and add a *property() method for each
+	 * property. Maybe this will not be necessary in future versions of JavaFX
+	 * (see http://javafx-jira.kenai.com/browse/RT-22599)
+	 */
+	private void refreshUserList() {
+		userList.getSelectionModel().selectedItemProperty().removeListener(mSelectedItemChangeListener);
+		int selectedIndex = userList.getSelectionModel().getSelectedIndex();
+		userList.setItems(null);
+		userList.layout();
+		this.userList.setItems(mUserList);
+		// Must set the selected index again (see http://javafx-jira.kenai.com/browse/RT-26291)
+		userList.getSelectionModel().select(selectedIndex);
+		userList.getSelectionModel().selectedItemProperty().addListener(mSelectedItemChangeListener);
+	}
+
 	private void appendChatLog(String body, User user, long time) {
 		chatLog.appendText(formatChatMessage(body, user, time));
 	}
 	private static String formatChatMessage(String body, User user, long time) {
 		return String.format(FORMATTER, time, user.getNikename() != null ? user.getNikename() : user.getId(), body);
 	}
+
+	private final ChangeListener<Account> mSelectedItemChangeListener = new ChangeListener<Account>() {
+		@Override
+		public void changed(ObservableValue<? extends Account> observable, Account oldValue, Account newValue) {
+			ChatLog chatlog = null;
+			if(oldValue != null) {
+				chatlog = (ChatLog) oldValue.getAttachment();
+				if(chatlog == null)
+					oldValue.setAttachment(chatlog = new ChatLog());
+				chatlog.chatLog = chatLog.getText();
+			}
+			if(newValue != null && ((chatlog = (ChatLog) newValue.getAttachment()) != null)) {
+				chatLog.setText(chatlog.chatLog);
+				chatlog.numberOfNewMessage = 0;
+				refreshUserList();
+			} else
+				chatLog.clear();
+			// TODO 更新标题栏
+		}
+	};
 
 	private final ChatClientListener mChatListener = new ChatClientListenerAdapter() {
 		@Override
@@ -141,12 +170,13 @@ public class ChatController extends Controller {
 					} else {
 						for(Account account : mUserList) {
 							if(senderId.equals(account.getId())) {
-								String chatLog = (String) account.getAttachment();
-								if(chatLog == null)
-									chatLog = "";
-								account.setAttachment( chatLog + formatChatMessage(
-										message.getMessage().getBody(), message.getSender(), message.getMessage().getSendTime()));
-								// TODO notify chat log updated
+								ChatLog chatlog = (ChatLog) account.getAttachment();
+								if(chatlog == null)
+									account.setAttachment(chatlog = new ChatLog());
+								chatlog.chatLog += formatChatMessage(
+										message.getMessage().getBody(), message.getSender(), message.getMessage().getSendTime());
+								chatlog.numberOfNewMessage++;
+								refreshUserList();
 								break;
 							}
 						}
@@ -218,7 +248,24 @@ public class ChatController extends Controller {
 				setText(getText() + " (me)");
 				setTextFill(Color.ORANGE);
 			}
+			ChatLog chatlog = (ChatLog) item.getAttachment();
+			if(chatlog != null) {
+				if(chatlog.numberOfNewMessage > 1) {
+					setText(getText() + " (" + chatlog.numberOfNewMessage + " messages)");
+					setStyle("-fx-font-weight: bold;");
+				} else if (chatlog.numberOfNewMessage == 1) {
+					setText(getText() + " (1 message)");
+					setStyle("-fx-font-weight: bold;");
+				} else {
+					setStyle("");
+				}
+			}
 			// TODO is it online?
 		}
+	}
+
+	private static class ChatLog {
+		private String chatLog = "";
+		private int numberOfNewMessage = 0;
 	}
 }
