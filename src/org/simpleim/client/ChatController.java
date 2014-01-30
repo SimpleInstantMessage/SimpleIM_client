@@ -9,6 +9,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.paint.Color;
 import javafx.stage.WindowEvent;
 import javafx.util.Callback;
@@ -67,6 +69,15 @@ public class ChatController extends Controller {
 				event.consume();
 			}
 		});
+		KeyCodeCombination keyCombination = new KeyCodeCombination(KeyCode.ENTER, KeyCodeCombination.CONTROL_DOWN);
+		mainApp.getPrimaryStage().getScene().getAccelerators().put(keyCombination,
+				new Runnable() {
+					@Override
+					public void run() {
+						send.fire();
+					}
+				});
+		send.setText(send.getText() + "(" + keyCombination.getName() + ")");
 	}
 	@FXML
 	private void initialize() {
@@ -184,7 +195,7 @@ public class ChatController extends Controller {
 				public void run() {
 					changeToLoginScene();
 					if(!closing)
-						;// TODO inform user
+						;// TODO inform user lost connection
 				}
 			});
 		}
