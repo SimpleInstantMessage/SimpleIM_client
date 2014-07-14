@@ -18,10 +18,10 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Dialogs;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import org.controlsfx.dialog.Dialogs;
 import org.simpleim.client.model.container.Account;
 import org.simpleim.client.model.netty.ChatClientHandler;
 import org.simpleim.client.model.netty.ChatClientHandler.ChatClientListener;
@@ -45,6 +45,7 @@ public class LoginController extends Controller {
 	private TextField server;
 	@FXML
 	private TextField port;
+	//TODO initialize it
 	protected static Stage stage;
 
 	@FXML
@@ -66,18 +67,31 @@ public class LoginController extends Controller {
 					if(account != null  && account.isValid())
 						new Thread(new LoginTask(server, port, account.getId(), account.getPassword())).start();
 					else
-						Dialogs.showErrorDialog(stage, "New ccount registration failed! You can try again.", "REGISTRATION FAILED", "Error", getException());
+						Dialogs.create()
+							.owner(stage)
+							.title("Error")
+							.masthead("REGISTRATION FAILED")
+							.message("New ccount registration failed! You can try again.")
+							.showException(getException());
 				}
 				@Override
 				protected void failed() {
 					super.failed();
 					if(getException() instanceof FileNotFoundException)
-						Dialogs.showErrorDialog(stage, 
-								"Cannot create account file, bacause there already have a directory named "
-										+ Constant.ACCOUNT_FILE_PATH + ". Please delete it and try again.",
-								"CANNOT CREATE ACCOUNT FILE", "Error", getException());
+						Dialogs.create()
+							.owner(stage)
+							.title("Error")
+							.masthead("CANNOT CREATE ACCOUNT FILE")
+							.message("Cannot create account file, bacause there already have a directory named "
+									+ Constant.ACCOUNT_FILE_PATH + ". Please delete it and try again.")
+							.showException(getException());
 					else
-						Dialogs.showErrorDialog(stage, "New ccount registration failed! You can try again.", "REGISTRATION FAILED", "Error", getException());
+						Dialogs.create()
+							.owner(stage)
+							.title("Error")
+							.masthead("REGISTRATION FAILED")
+							.message("New ccount registration failed! You can try again.")
+							.showException(getException());
 				}
 				
 			};
